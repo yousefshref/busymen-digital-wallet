@@ -60,7 +60,12 @@ export default function EditPage({ wallet, onUpdated }) {
     }
   };
 
-  const addLink = () => setLinks([...links, { platform: 'phone', value: '', label: '' }]);
+  // استبدل الدالة دي:
+const addLink = () => {
+  if (links.length < 7) {
+    setLinks([...links, { platform: 'phone', value: '', label: '' }]);
+  }
+};
   
   const updateLink = (index, field, newValue) => {
     const updatedLinks = [...links];
@@ -149,8 +154,18 @@ export default function EditPage({ wallet, onUpdated }) {
           <div>
             <div className="flex justify-between items-center mb-4">
               <label className="block text-lg font-medium text-busyDark">روابط التواصل:</label>
-              <button type="button" onClick={addLink} className="text-sm bg-busyBorder text-busyDark px-3 py-1.5 rounded-lg hover:bg-gray-300 transition-colors">
-                + إضافة رابط
+              
+              <button 
+                type="button" 
+                onClick={addLink} 
+                disabled={links.length >= 7}
+                className={`text-sm px-3 py-1.5 rounded-lg transition-colors ${
+                  links.length >= 7 
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                    : 'bg-busyBorder text-busyDark hover:bg-gray-300'
+                }`}
+              >
+                {links.length >= 7 ? 'الحد الأقصى (7)' : '+ إضافة رابط'}
               </button>
             </div>
 

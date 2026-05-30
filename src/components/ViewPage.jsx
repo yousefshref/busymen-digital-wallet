@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../supabaseClient';
 
-// نفس مساعد الأيقونات القديم (مفيش فيه تغيير)
 const Icon = ({ name }) => {
   const icons = {
     phone: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-3C9.716 21 3 14.284 3 5z"></path></svg>,
@@ -16,8 +15,41 @@ const Icon = ({ name }) => {
   return icons[name] || null;
 };
 
-const SocialIcon = ({ name, url }) => {
-  // تحديد الألوان الرسمية لكل منصة وتأثيرات الـ Hover
+// 🌟 الدالة الذكية لتحويل النص للينك شغال 100% 🌟
+const formatUrl = (platform, value) => {
+  if (!value) return '#';
+  
+  // لو العميل كتب اللينك كامل من نفسه، هنرجعه زي ما هو
+  const isAlreadyUrl = value.startsWith('http://') || value.startsWith('https://');
+
+  switch (platform) {
+    case 'whatsapp': {
+      // بنشيل أي مسافات أو علامات من الرقم
+      let cleanNum = value.replace(/[\s\-\+]/g, '');
+      // لو الرقم بيبدأ بـ 0 (زي 010)، بنحط كود مصر 2
+      if (cleanNum.startsWith('0')) {
+        cleanNum = '2' + cleanNum;
+      }
+      return `https://wa.me/${cleanNum}`;
+    }
+    case 'instagram':
+      return isAlreadyUrl ? value : `https://instagram.com/${value.replace('@', '')}`;
+    case 'tiktok':
+      return isAlreadyUrl ? value : `https://tiktok.com/@${value.replace('@', '')}`;
+    case 'linkedin':
+      return isAlreadyUrl ? value : `https://linkedin.com/in/${value}`;
+    case 'twitterx':
+      return isAlreadyUrl ? value : `https://twitter.com/${value.replace('@', '')}`;
+    case 'facebook':
+      return isAlreadyUrl ? value : `https://facebook.com/${value}`;
+    case 'phone':
+      return `tel:${value}`;
+    default:
+      return isAlreadyUrl ? value : `https://${value}`;
+  }
+};
+
+const SocialIcon = ({ name, value }) => {
   const brandStyles = {
     whatsapp: 'text-[#25D366] border-[#25D366]/40 hover:bg-[#25D366] hover:text-white hover:border-[#25D366] hover:-translate-y-1',
     instagram: 'text-[#E1306C] border-[#E1306C]/40 hover:bg-gradient-to-tr hover:from-[#f9ce34] hover:via-[#ee2a7b] hover:to-[#6228d7] hover:text-white hover:border-transparent hover:-translate-y-1',
@@ -28,10 +60,13 @@ const SocialIcon = ({ name, url }) => {
   };
 
   const styleClass = brandStyles[name] || 'text-gray-600 border-gray-200 hover:bg-gray-100 hover:-translate-y-1';
+  
+  // بنعدي القيمة للدالة الذكية عشان تطلعلنا اللينك النهائي
+  const finalUrl = formatUrl(name, value);
 
   return (
     <a 
-      href={url} 
+      href={finalUrl} 
       target="_blank" 
       rel="noopener noreferrer" 
       className={`w-12 h-12 rounded-full border bg-white flex justify-center items-center shadow-sm transition-all duration-300 ${styleClass}`}
@@ -46,11 +81,11 @@ export default function ViewPage({ wallet, onRestoreAccess }) {
   const [pinAttempt, setPinAttempt] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
-  // استخراج الداتا (مع إضافة avatarUrl)
   const { name = 'مستخدم جديد', bio = 'أهلاً بك في صفحتي الشخصية.', avatarUrl = '', links = [] } = wallet.profile_data || {};
   
   const phoneLink = links.find(l => l.platform === 'phone');
   const socialLinks = links.filter(l => l.platform !== 'phone');
+  // const facebookLink = links.find(l => l.platform === 'facebook');
 
   const handlePinCheck = () => {
     if (pinAttempt === wallet.owner_pin) {
@@ -65,21 +100,17 @@ export default function ViewPage({ wallet, onRestoreAccess }) {
   return (
     <div className="min-h-screen bg-busyBg flex justify-center items-center p-4">
       <div className="bg-white max-w-xl w-full rounded-3xl shadow-xl overflow-hidden relative">
-        {/* الهيدر الغامق */}
         <div className="bg-busyDark h-32 relative"></div>
 
-        {/* --- منطقة الصورة الشخصية --- */}
         <div className="absolute top-16 left-1/2 -translate-x-1/2 w-28 h-28 bg-[#d4d4d8] rounded-full border-4 border-white flex justify-center items-center overflow-hidden">
           {avatarUrl ? (
-            // لو العميل حط رابط صورة، هتتعرض هنا وتملا الدائرة بالكامل
             <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
           ) : (
-            // لو مفيش صورة، نعرض الأيقونة الرمادية
             <svg className="w-14 h-14 text-busyBg" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
           )}
         </div>
 
-        <div className="pt-16 px-6 text-center w-full">
+        <div className="pt-16 px-6 text-center">
           <h1 className="text-3xl font-bold text-busyDark mt-4 tracking-tight">{name}</h1>
           <p className="text-sm text-[#71717a] mt-2 font-light">{bio}</p>
 
@@ -88,18 +119,24 @@ export default function ViewPage({ wallet, onRestoreAccess }) {
           {phoneLink && (
             <a href={`tel:${phoneLink.value}`} className="bg-busyDark text-busyBg rounded-full flex justify-center items-center px-6 py-4 mt-6 text-lg w-full max-w-xs mx-auto gap-3 hover:bg-black transition-colors">
               <Icon name="phone" />
-              {phoneLink.label || phoneLink.value}
+              {/* التعديل هنا: هيعرض القيمة الحقيقية اللي العميل دخلها في صفحة الـ Edit */}
+              {phoneLink.value}
             </a>
           )}
 
           {socialLinks.length > 0 && (
-            <div className="flex justify-center gap-4 mt-8 px-6 max-w-full mx-auto flex-wrap w-full">
+            <div className="flex justify-center gap-4 mt-8 px-6 max-w-full mx-auto flex-wrap">
               {socialLinks.map((link, index) => (
-                <SocialIcon key={index} name={link.platform} url={link.value} />
+                <SocialIcon key={index} name={link.platform} value={link.value} />
               ))}
             </div>
           )}
 
+          {/* {facebookLink && (
+            <div className="mt-6 px-6 max-w-xs mx-auto flex justify-center">
+              <SocialIcon name="facebook" value={facebookLink.value} />
+            </div>
+          )} */}
 
           <div className="text-center text-xs text-[#71717a] mt-10 mb-6 px-6 font-light">
             powered by <span className="font-semibold text-[#18181b]">BusyMen</span>
